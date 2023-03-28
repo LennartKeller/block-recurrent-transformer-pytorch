@@ -426,7 +426,7 @@ class AttentionBlock(nn.Module):
             # gating related parameters - using the fixed simple config
 
             self.state_out_to_gate = nn.Linear(dim, dim)
-            self.learned_ema_beta = nn.Parameter(torch.randn(dim))
+            self.learned_ema_bias = nn.Parameter(torch.randn(dim))
 
     def forward(
         self,
