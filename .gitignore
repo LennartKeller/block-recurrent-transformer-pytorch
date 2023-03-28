@@ -1,3 +1,5 @@
+# dir for texts saves etc.
+_test/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
