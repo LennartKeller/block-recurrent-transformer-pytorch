@@ -28,7 +28,19 @@ loss.backward()
 print(loss.item())
 
 print(model.state_dict().keys())
-print("#############################")
 model.save_pretrained("_test/model")
-loaded_config = BlockRecurrentTransformerConfig.from_pretrained("_test/model")
-loaded_model = BlockRecurrentTransformerForMaskedLM.from_pretrained("_test/model", config=config)
+
+print("#############################")
+
+MODEL_LOAD_PATH = "_test/recurrent-gbert-large"
+
+loaded_config = BlockRecurrentTransformerConfig.from_pretrained(MODEL_LOAD_PATH)
+loaded_model = BlockRecurrentTransformerForMaskedLM.from_pretrained(MODEL_LOAD_PATH, config=loaded_config)
+
+seq = torch.randint(0, 20000, (3, 2048))
+labels = seq
+
+outputs = loaded_model(input_ids=seq, labels=labels)
+loss = outputs["loss"]
+loss.backward()
+print(loss.item())

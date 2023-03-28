@@ -319,7 +319,7 @@ def FeedForward(in_dim, out_dim):
         LayerNorm(in_dim),
         nn.Linear(in_dim, out_dim * 2, bias = False),
         GEGLU(),
-        nn.Linear(out_dim, out_dim, bias = False)
+        nn.Linear(out_dim, in_dim, bias = False)
     )
 
 # attention
