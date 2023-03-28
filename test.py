@@ -28,7 +28,7 @@ loss.backward()
 print(loss.item())
 
 print(model.state_dict().keys())
-
+print("#############################")
 model.save_pretrained("_test/model")
-config = BlockRecurrentTransformerConfig.from_pretrained("_test/model")
-model = BlockRecurrentTransformerForMaskedLM.from_pretrained("_test/model", config=config)
+loaded_config = BlockRecurrentTransformerConfig.from_pretrained("_test/model")
+loaded_model = BlockRecurrentTransformerForMaskedLM.from_pretrained("_test/model", config=config)
