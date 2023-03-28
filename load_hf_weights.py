@@ -166,10 +166,10 @@ if __name__ == "__main__":
    model = load_state_dict_merciful(model, converted_state_dict)
 
    print("Saving MemoryTransformer")
-   model.save_pretrained("_test/mem-gbert-large")
+   model.save_pretrained("_test/recurrent-gbert-large")
    bert_tokenizer.model_max_length = 512
    bert_tokenizer.init_kwargs["model_max_length"] = 512
-   bert_tokenizer.save_pretrained("_test/mem-gbert-large")
+   bert_tokenizer.save_pretrained("_test/recurrent-gbert-large")
 
    #############################################################
    
@@ -201,7 +201,7 @@ if __name__ == "__main__":
    model = load_state_dict_merciful(model, converted_state_dict)
    
    print("Saving MemoryTransformer")
-   model.save_pretrained("_test/mem-bert-base-german-cased")
+   model.save_pretrained("_test/recurrent-bert-base-german-cased")
    bert_tokenizer.model_max_length = 512
    bert_tokenizer.init_kwargs["model_max_length"] = 512
-   bert_tokenizer.save_pretrained("_test/mem-bert-base-german-cased")
+   bert_tokenizer.save_pretrained("_test/recurrent-bert-base-german-cased")
