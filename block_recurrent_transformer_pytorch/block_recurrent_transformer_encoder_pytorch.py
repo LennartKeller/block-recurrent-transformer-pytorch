@@ -568,7 +568,7 @@ class AttentionBlock(nn.Module):
                 # fixed simple gate - nothing more than a learned EMA with some resemblance to highway networks
 
                 z = self.state_out_to_gate(state_out)
-                learned_ema_decay = self.learned_ema_beta.sigmoid()
+                learned_ema_decay = self.learned_ema_bias.sigmoid()
 
                 new_states = learned_ema_decay * z + (1 - learned_ema_decay) * orig_states
 
