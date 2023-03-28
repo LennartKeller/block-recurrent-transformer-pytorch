@@ -79,11 +79,11 @@ def pad_at_dim(t, pad, dim = -1, value = 0.):
 class LayerNorm(nn.Module):
     def __init__(self, dim):
         super().__init__()
-        self.gamma = nn.Parameter(torch.ones(dim))
-        self.register_buffer("beta", torch.zeros(dim))
+        self.weight = nn.Parameter(torch.ones(dim))
+        self.register_buffer("bias", torch.zeros(dim))
 
     def forward(self, x):
-        return F.layer_norm(x, x.shape[-1:], self.gamma, self.beta)
+        return F.layer_norm(x, x.shape[-1:], self.weight, self.bias)
 
 # sampling helpers
 
