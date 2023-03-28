@@ -1,10 +1,10 @@
 import torch
-from block_recurrent_transformer_pytorch import BlockRecurrentTransformerEncoder
+from block_recurrent_transformer_pytorch import BlockRecurrentTransformerConfig, BlockRecurrentTransformerForMaskedLM
 
-model = BlockRecurrentTransformerEncoder(
+config = BlockRecurrentTransformerConfig(
     num_tokens = 20000,             # vocab size
     dim = 768,                      # model dimensions
-    intermediate_size = 768,        # Intermediate dim
+    intermediate_dim = 768,         # intermediate dim
     depth = 6,                      # depth
     dim_head = 64,                  # attention head dimensions
     heads = 8,                      # number of attention heads
@@ -17,12 +17,14 @@ model = BlockRecurrentTransformerEncoder(
     use_flash_attn = True           # use flash attention, if on pytorch 2.0
 )
 
-seq = torch.randint(0, 2000, (1, 1024))
+model = BlockRecurrentTransformerForMaskedLM(config=config)
 
-out, mems1, states1 = model(seq)
-out, mems2, states2 = model(seq, xl_memories = mems1, states = states1)
-out, mems3, states3 = model(seq, xl_memories = mems2, states = states2)
+seq = torch.randint(0, 20000, (3, 2048))
+labels = seq
 
-print(out.size())
+outputs = model(input_ids=seq, labels=labels)
+loss = outputs["loss"]
+loss.backward()
+print(loss.item())
 
 print(model.state_dict().keys())

@@ -585,9 +585,9 @@ class BlockRecurrentTransformerEncoder(nn.Module):
         dim,
         depth,
         dim_head = 64,
+        intermediate_dim = 4096,
         heads = 8,
         all_layers_qk_rmsnorm = False,
-        intermediate_size = 4096,
         max_seq_len = 1024,
         block_width = 512,
         xl_memories_layers: Optional[Tuple[int, ...]] = None,
@@ -638,7 +638,7 @@ class BlockRecurrentTransformerEncoder(nn.Module):
                     num_state_vectors = layer_num_state_vectors,
                     use_flash_attn = use_flash_attn
                 ),
-                FeedForward(in_dim=dim, out_dim=intermediate_size)
+                FeedForward(in_dim=dim, out_dim=intermediate_dim)
             ]))
 
         self.to_embs = nn.Sequential(
@@ -656,24 +656,25 @@ class BlockRecurrentTransformerEncoder(nn.Module):
 
         self.enhanced_recurrence = enhanced_recurrence
 
-        self.register_buffer('cached_causal_attn_mask', None, persistent = False)
+        self.register_buffer('cached_attn_mask', None, persistent = False)
 
     @property
     def device(self):
         return next(self.parameters()).device
+    
+    def get_noncausal_attn_mask(self, width):
+        device = self.device
+        attn_mask = torch.ones((width, 2* width), device=device, dtype=torch.bool)
+        return attn_mask
 
     def forward(
         self,
         x,
-        attn_mask: torch.Tensor = None,
         xl_memories: List[torch.Tensor] = [],
         states: List[torch.Tensor] = [],
         return_memories_and_states = None  # can force to either return memory + state or not. by default will only return when number of tokens == max_seq_len
     ):
         device = x.device
-
-        if attn_mask is None:
-            attn_mask = torch.ones_like(x).bool()
 
         # get sequence length i and j for dynamic pos bias
 
@@ -687,7 +688,7 @@ class BlockRecurrentTransformerEncoder(nn.Module):
 
         # dynamic pos bias
 
-        # attn_mask = self.get_causal_attn_mask(w)
+        attn_mask = self.get_noncausal_attn_mask(w)
         rotary_pos_emb, xpos_scale = self.rotary_pos_emb(2 * w)
 
         # enhanced recurrence
