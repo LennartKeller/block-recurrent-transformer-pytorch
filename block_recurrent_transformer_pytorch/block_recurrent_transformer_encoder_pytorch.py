@@ -663,8 +663,10 @@ class BlockRecurrentTransformerEncoder(nn.Module):
     def device(self):
         return next(self.parameters()).device
     
-    def get_noncausal_attn_mask(self, width):
-        device = self.device
+    def get_noncausal_attn_mask(self, width, device=None):
+        # Hack to get multi-gpu setup to work
+        if device is None:
+            device = self.device
         attn_mask = torch.ones((width, 2* width), device=device, dtype=torch.bool)
         return attn_mask
 
@@ -689,7 +691,7 @@ class BlockRecurrentTransformerEncoder(nn.Module):
 
         # dynamic pos bias
 
-        attn_mask = self.get_noncausal_attn_mask(w)
+        attn_mask = self.get_noncausal_attn_mask(w, device=device)
         rotary_pos_emb, xpos_scale = self.rotary_pos_emb(2 * w)
 
         # enhanced recurrence
