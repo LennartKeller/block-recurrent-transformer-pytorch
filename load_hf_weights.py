@@ -167,9 +167,14 @@ if __name__ == "__main__":
 
    print("Saving MemoryTransformer")
    model.save_pretrained("_test/recurrent-gbert-large")
-   bert_tokenizer.model_max_length = 512
-   bert_tokenizer.init_kwargs["model_max_length"] = 512
+   bert_tokenizer.model_max_length = 1024
+   bert_tokenizer.init_kwargs["model_max_length"] = 1024
    bert_tokenizer.save_pretrained("_test/recurrent-gbert-large")
+
+   print("Saving model with random initialized weights")
+   random_model = BlockRecurrentTransformerModel(config)
+   random_model.save_pretrained("_test/rand-recurrent-gbert-large")
+   bert_tokenizer.save_pretrained("_test/rand-recurrent-gbert-large")
 
    #############################################################
    
@@ -202,6 +207,14 @@ if __name__ == "__main__":
    
    print("Saving MemoryTransformer")
    model.save_pretrained("_test/recurrent-bert-base-german-cased")
-   bert_tokenizer.model_max_length = 512
-   bert_tokenizer.init_kwargs["model_max_length"] = 512
+   bert_tokenizer.model_max_length = 1024
+   bert_tokenizer.init_kwargs["model_max_length"] = 1024
    bert_tokenizer.save_pretrained("_test/recurrent-bert-base-german-cased")
+   
+   print("Saving model with random initialized weights")
+   random_model = BlockRecurrentTransformerModel(config)
+   random_model.save_pretrained("_test/rand-recurrent-bert-base-german-cased")
+   bert_tokenizer.save_pretrained("_test/rand-recurrent-bert-base-german-cased")
+
+
+
