@@ -55,6 +55,9 @@ class BlockRecurrentTransformerConfig(PretrainedConfig):
 
 
 class BlockRecurrentTransformerModel(PreTrainedModel):
+    
+    MODEL_OUTPUT = BaseModelOutput
+    
     def __init__(self, config: PretrainedConfig, *inputs, **kwargs):
         super().__init__(config, *inputs, **kwargs)
 
@@ -70,7 +73,7 @@ class BlockRecurrentTransformerModel(PreTrainedModel):
     def forward(self, *args, **kwargs) -> Union[Dict[str, torch.Tensor], Tuple[torch.Tensor]]:
         outputs = self._forward(*args, **kwargs)
         if isinstance(outputs, dict):
-            return BaseModelOutput(**outputs)
+            return self.MODEL_OUTPUT(**outputs)
         else:
             return outputs
     
@@ -199,17 +202,12 @@ class BlockRecurrentTransformerModel(PreTrainedModel):
         return outputs
     
 class BlockRecurrentTransformerForMaskedLM(BlockRecurrentTransformerModel):
+    
+    MODEL_OUTPUT = MaskedLMOutput
 
     def __init__(self, config: PretrainedConfig, *inputs, **kwargs):
         super().__init__(config, *inputs, **kwargs)
         self.classifier = nn.Linear(self.config.dim, self.config.num_tokens)
-    
-    def forward(self, *args, **kwargs):
-        outputs = self._forward(*args, **kwargs)
-        if isinstance(outputs, dict):
-            return MaskedLMOutput(**outputs)
-        else:
-            return outputs
 
     def forward_segment(
             self,
