@@ -238,6 +238,10 @@ class BlockRecurrentTransformerForMaskedLM(BlockRecurrentTransformerModel):
         if labels is not None:
             *_, num_tokens = logits.size()
             loss = F.cross_entropy(logits.reshape(-1, num_tokens), labels.reshape(-1))
+            # Due to chunking, we sometimes encounter segments without any masked-out tokens.
+            # In these cases the loss is NaN, and we replace it with a artificial zero loss
+            if torch.isnan(loss):
+                loss = torch.tensor(0.0, requires_grad=True, device=loss.device)
         
         if return_dict:
             outputs = MaskedLMOutput(logits=logits)
