@@ -450,7 +450,8 @@ class AttentionBlock(nn.Module):
         qk_rmsnorm = False,
         qk_rmsnorm_scale = 8,
         num_state_vectors = 0,
-        use_flash_attn = False
+        use_flash_attn = False,
+        gate_type = None
     ):
         super().__init__()
         inner_dim = dim_head * heads
@@ -492,8 +493,12 @@ class AttentionBlock(nn.Module):
 
             #self.state_out_to_gate = nn.Linear(dim, dim)
             #self.learned_ema_bias = nn.Parameter(torch.randn(dim))
-
-            self.state_gate = LSTMStyleGate(dim)
+            if gate_type is None or gate_type.lower() == "fixed":
+                self.state_gate = FixedStateGate(dim)
+            elif gate_type.lower() == "lstm":
+                self.state_gate = LSTMStyleGate(dim)
+            else:
+                raise ValueError(f"Invalid value for argument gate_type ({gate_type})")
 
     def forward(
         self,
@@ -664,7 +669,8 @@ class BlockRecurrentTransformerEncoder(nn.Module):
         num_state_vectors = None,
         enhanced_recurrence = False,
         ignore_index = -100,
-        use_flash_attn = False
+        use_flash_attn = False,
+        gate_type = None
     ):
         super().__init__()
         num_state_vectors = default(num_state_vectors, block_width)
@@ -705,7 +711,8 @@ class BlockRecurrentTransformerEncoder(nn.Module):
                     heads = heads,
                     qk_rmsnorm = qk_rmsnorm,
                     num_state_vectors = layer_num_state_vectors,
-                    use_flash_attn = use_flash_attn
+                    use_flash_attn = use_flash_attn,
+                    gate_type=gate_type
                 ),
                 FeedForward(in_dim=dim, out_dim=intermediate_dim)
             ]))

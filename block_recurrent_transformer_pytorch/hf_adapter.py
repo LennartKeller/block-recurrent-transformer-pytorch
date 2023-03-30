@@ -34,6 +34,7 @@ class BlockRecurrentTransformerConfig(PretrainedConfig):
             ignore_index = -100,
             use_flash_attn = False,
             pad_segments = False,
+            gate_type = "fixed",
             **kwargs
     ):
         super().__init__(**kwargs)
@@ -55,6 +56,7 @@ class BlockRecurrentTransformerConfig(PretrainedConfig):
         self.ignore_index = ignore_index
         self.use_flash_attn = use_flash_attn
         self.pad_segments = pad_segments # torch.compile requires fixed size batches...
+        self.gate_type = gate_type
 
 
 class BlockRecurrentTransformerModel(PreTrainedModel):

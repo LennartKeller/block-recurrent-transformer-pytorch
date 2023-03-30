@@ -1,5 +1,6 @@
 import re
 from collections import UserDict
+from copy import deepcopy
 from typing import Callable, Dict, List, Union
 from torch import nn
 from torch import Tensor
@@ -171,7 +172,14 @@ if __name__ == "__main__":
    bert_tokenizer.init_kwargs["model_max_length"] = config.max_seq_len
    bert_tokenizer.save_pretrained("_test/recurrent-gbert-large")
 
-   print("Saving model with random initialized weights")
+   print("Saving MemoryTransformer with lstm-style gate")
+   lstm_gate_config = deepcopy(config)
+   lstm_gate_config.update({"gate_type": "lstm"})
+   lstm_gate_model = BlockRecurrentTransformerModel(lstm_gate_config)
+   lstm_gate_model = load_state_dict_merciful(lstm_gate_model, converted_state_dict)
+   lstm_gate_model.save_pretrained("_test/recurrent-gbert-large-lstm-gate")
+
+   print("Saving model with random initialized weights with fixed gate")
    random_model = BlockRecurrentTransformerModel(config)
    random_model.save_pretrained("_test/rand-recurrent-gbert-large")
    bert_tokenizer.save_pretrained("_test/rand-recurrent-gbert-large")
@@ -210,8 +218,15 @@ if __name__ == "__main__":
    bert_tokenizer.model_max_length = config.max_seq_len
    bert_tokenizer.init_kwargs["model_max_length"] = config.max_seq_len
    bert_tokenizer.save_pretrained("_test/recurrent-bert-base-german-cased")
+
+   print("Saving MemoryTransformer with lstm-style gate")
+   lstm_gate_config = deepcopy(config)
+   lstm_gate_config.update({"gate_type": "lstm"})
+   lstm_gate_model = BlockRecurrentTransformerModel(lstm_gate_config)
+   lstm_gate_model = load_state_dict_merciful(lstm_gate_model, converted_state_dict)
+   lstm_gate_model.save_pretrained("_test/recurrent-bert-base-german-cased-lstm-gate")
    
-   print("Saving model with random initialized weights")
+   print("Saving model with random initialized weights with fixed gate")
    random_model = BlockRecurrentTransformerModel(config)
    random_model.save_pretrained("_test/rand-recurrent-bert-base-german-cased")
    bert_tokenizer.save_pretrained("_test/rand-recurrent-bert-base-german-cased")
