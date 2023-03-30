@@ -577,7 +577,7 @@ class AttentionBlock(nn.Module):
 
 # classes
 
-@beartype
+#@beartype
 class BlockRecurrentTransformerEncoder(nn.Module):
     def __init__(
         self,
