@@ -427,7 +427,7 @@ class LSTMStyleGate(nn.Module):
             nn.Sigmoid()
         )
 
-        self.init_weights(dim)
+        self._init_weights(dim)
     
     def forward(self, orig_states: torch.Tensor, state_out: torch.Tensor) -> torch.Tensor:
         # State_out: projected current states, orig_states: states from prev. segment
@@ -438,7 +438,7 @@ class LSTMStyleGate(nn.Module):
         new_states = (orig_states * forget_mask) + (z * input_mask)
         return new_states
 
-    def init_weights(self, dim: int):
+    def _init_weights(self, dim: int):
         input_linear_layer = self.input_gate[0]
         forget_linear_layer = self.forget_gate[0]
         # Init biases
