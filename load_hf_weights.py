@@ -187,7 +187,7 @@ if __name__ == "__main__":
        bert_model.config,
        BERT_CONFIG_TRANSLATE_MAP,
        recurrent_layers=(10,),
-       xl_memories_layers=tuple(range(1, bert_model.config.num_hidden_layers))[::3],
+       xl_memories_layers=tuple(range(1, bert_model.config.num_hidden_layers)),
        max_seq_len=512,
        block_width=512,
        enhanced_recurrence=True,
