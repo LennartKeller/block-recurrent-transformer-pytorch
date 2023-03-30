@@ -62,14 +62,6 @@ class BlockRecurrentTransformerModel(PreTrainedModel):
     MODEL_OUTPUT = BaseModelOutput
     
     def __init__(self, config: PretrainedConfig, *inputs, **kwargs):
-        # This is somewhat ugly...
-        if self.config.pad_segments:
-            tokenizer = kwargs.pop("tokenizer")
-            self.collator = DataCollatorWithPadding(
-                padding="max_length",
-                max_length=self.config.max_seq_len,
-                tokenizer=tokenizer
-            )
         super().__init__(config, *inputs, **kwargs)
 
         # If the config is read from disk, tuples become lists and are not hashable anymore...
@@ -217,6 +209,9 @@ class BlockRecurrentTransformerModel(PreTrainedModel):
         if labels is not None:
             outputs = (loss,) + outputs
         return outputs
+    
+    def init_segment_collator(self, tokenizer):
+        self.tokenizer = tokenizer
     
 class BlockRecurrentTransformerForMaskedLM(BlockRecurrentTransformerModel):
     
