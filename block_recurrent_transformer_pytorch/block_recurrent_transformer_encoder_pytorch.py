@@ -431,8 +431,8 @@ class LSTMStyleGate(nn.Module):
         # State_out: projected current states, orig_states: states from prev. segment
         z = self.state_out_to_gate(state_out)
         # Constants should enforce the model to use the memory-
-        input_mask = self.input_gate(state_out) - 1
-        forget_mask = self.forget_gate(state_out) + 1
+        input_mask = self.input_gate(state_out)
+        forget_mask = self.forget_gate(state_out)
         new_states = (orig_states * forget_mask) + (state_out * input_mask)
         return new_states
 
