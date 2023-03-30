@@ -376,6 +376,54 @@ class Attention(nn.Module):
 
         return out
 
+
+class FixedStateGate(nn.Module):
+    """
+    Fixed gate to update to states.
+    Simply wraps the mimics the original parameters and logic.
+    """
+    def __init__(self, dim: int) -> None:
+        super().__init__()
+        self.state_out_to_gate = nn.Linear(dim, dim)
+        self.learned_ema_bias = nn.Parameter(torch.randn(dim))
+    
+    def forward(self, orig_states: torch.Tensor, state_out: torch.Tensor) -> torch.Tensor:
+        z = self.state_out_to_gate(state_out)
+        learned_ema_decay = self.learned_ema_bias.sigmoid()
+        new_states = learned_ema_decay * z + (1 - learned_ema_decay) * orig_states
+        return new_states
+
+
+class LSTMStyleGate(nn.Module):
+    """
+    LSTM-style gate as proposed in the original paper.
+    Judging from the results, this should perform slightly worse...
+    """
+
+    def __init__(self, dim: int) -> None:
+        super().__init__()
+        self.state_out_to_gate = nn.Sequential(
+            nn.Linear(dim, dim),
+            nn.Tanh()
+        )
+        self.input_gate, self.forget_gate = (
+            nn.Sequential(nn.Linear(dim, dim), nn.Sigmoid())
+            for _ in range(2)
+        )
+    
+    def forward(self, orig_states: torch.Tensor, state_out: torch.Tensor) -> torch.Tensor:
+        # State_out: projected current states, orig_states: states from prev. segment
+        z = self.state_out_to_gate(state_out)
+        # Constants should enforce the model to use the memory-
+        input_mask = self.input_gate(state_out) - 1
+        forget_mask = self.forget_gate(state_out) + 1
+        new_states = (orig_states * forget_mask) + (state_out * input_mask)
+        return new_states
+
+
+
+
+
 class AttentionBlock(nn.Module):
     def __init__(
         self,
@@ -426,8 +474,10 @@ class AttentionBlock(nn.Module):
 
             # gating related parameters - using the fixed simple config
 
-            self.state_out_to_gate = nn.Linear(dim, dim)
-            self.learned_ema_bias = nn.Parameter(torch.randn(dim))
+            #self.state_out_to_gate = nn.Linear(dim, dim)
+            #self.learned_ema_bias = nn.Parameter(torch.randn(dim))
+
+            self.state_gate = LSTMStyleGate(dim)
 
     def forward(
         self,
@@ -568,10 +618,12 @@ class AttentionBlock(nn.Module):
                 # use the best performing configuration
                 # fixed simple gate - nothing more than a learned EMA with some resemblance to highway networks
 
-                z = self.state_out_to_gate(state_out)
-                learned_ema_decay = self.learned_ema_bias.sigmoid()
+                # z = self.state_out_to_gate(state_out)
+                # learned_ema_decay = self.learned_ema_bias.sigmoid()
 
-                new_states = learned_ema_decay * z + (1 - learned_ema_decay) * orig_states
+                # new_states = learned_ema_decay * z + (1 - learned_ema_decay) * orig_states
+
+                new_states = self.state_gate(orig_states=orig_states, state_out=state_out)
 
         return self.to_out(out), memories, new_states
 
