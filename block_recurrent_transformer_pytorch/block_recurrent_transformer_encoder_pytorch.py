@@ -448,8 +448,8 @@ class LSTMStyleGate(nn.Module):
 
         # projection weights
         weight_std = math.sqrt(0.1 / dim)
-        nn.init.trunc_normal_(forget_linear_layer.bias, std=weight_std)
-        nn.init.trunc_normal_(input_linear_layer.bias, std=weight_std)
+        nn.init.trunc_normal_(forget_linear_layer.weight, std=weight_std)
+        nn.init.trunc_normal_(input_linear_layer.weight, std=weight_std)
 
 
 
