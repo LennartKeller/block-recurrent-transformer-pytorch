@@ -394,6 +394,16 @@ class FixedStateGate(nn.Module):
         return new_states
 
 
+class Lambda(nn.Module):
+    
+    def __init__(self, func):
+        super.__init__()
+        self.func = func
+    
+    def forward(self, *args, **kwargs):
+        return self.func(*args, **kwargs)
+
+
 class LSTMStyleGate(nn.Module):
     """
     LSTM-style gate as proposed in the original paper.
@@ -406,9 +416,15 @@ class LSTMStyleGate(nn.Module):
             nn.Linear(dim, dim),
             nn.Tanh()
         )
-        self.input_gate, self.forget_gate = (
-            nn.Sequential(nn.Linear(dim, dim), nn.Sigmoid())
-            for _ in range(2)
+        self.input_gate = nn.Sequential(
+            nn.Linear(dim, dim),
+            Lambda(lambda x: x - 1),
+            nn.Sigmoid()
+        )
+        self.forget_gate = nn.Sequential(
+            nn.Linear(dim, dim),
+            Lambda(lambda x: x + 1),
+            nn.Sigmoid()
         )
     
     def forward(self, orig_states: torch.Tensor, state_out: torch.Tensor) -> torch.Tensor:
