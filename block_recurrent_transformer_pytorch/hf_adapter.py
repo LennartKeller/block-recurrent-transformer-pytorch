@@ -211,7 +211,11 @@ class BlockRecurrentTransformerModel(PreTrainedModel):
         return outputs
     
     def init_segment_collator(self, tokenizer):
-        self.tokenizer = tokenizer
+        self.collator = DataCollatorWithPadding(
+            tokenizer=tokenizer,
+            padding="max_length",
+            max_length=self.config.max_seq_len
+        )
     
 class BlockRecurrentTransformerForMaskedLM(BlockRecurrentTransformerModel):
     
