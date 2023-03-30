@@ -426,6 +426,8 @@ class LSTMStyleGate(nn.Module):
             Lambda(lambda x: x + 1),
             nn.Sigmoid()
         )
+
+        self.init_weights(dim)
     
     def forward(self, orig_states: torch.Tensor, state_out: torch.Tensor) -> torch.Tensor:
         # State_out: projected current states, orig_states: states from prev. segment
@@ -433,8 +435,21 @@ class LSTMStyleGate(nn.Module):
         # Constants should enforce the model to use the memory-
         input_mask = self.input_gate(state_out)
         forget_mask = self.forget_gate(state_out)
-        new_states = (orig_states * forget_mask) + (state_out * input_mask)
+        new_states = (orig_states * forget_mask) + (z * input_mask)
         return new_states
+
+    def init_weights(self, dim: int):
+        input_linear_layer = self.input_gate[0]
+        forget_linear_layer = self.forget_gate[0]
+        # Init biases
+        bias_mean, bias_std = 1, 0.1
+        nn.init.normal_(input_linear_layer.bias, mean=bias_mean, std=bias_std)
+        nn.init.normal_(forget_linear_layer.bias, mean=bias_mean, std=bias_std)
+
+        # projection weights
+        weight_std = math.sqrt(0.1 / dim)
+        nn.init.trunc_normal_(forget_linear_layer.bias, std=weight_std)
+        nn.init.trunc_normal_(input_linear_layer.bias, std=weight_std)
 
 
 
