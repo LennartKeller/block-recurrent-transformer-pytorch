@@ -1,8 +1,12 @@
+import platform
 import torch
 from block_recurrent_transformer_pytorch import BlockRecurrentTransformerConfig, BlockRecurrentTransformerForMaskedLM
 
+device = "cuda:0" if torch.cuda.is_available() else "mps" if platform.machine() == "arm64" else "cpu"
+print(f"Using device {device}")
+
 config = BlockRecurrentTransformerConfig(
-    num_tokens = 20000,             # vocab size
+    num_tokens = 20000,             # vocab sizetokenizer
     dim = 768,                      # model dimensions
     intermediate_dim = 768,         # intermediate dim
     depth = 6,                      # depth
@@ -18,9 +22,9 @@ config = BlockRecurrentTransformerConfig(
 )
 
 model = BlockRecurrentTransformerForMaskedLM(config=config)
-
-seq = torch.randint(0, 20000, (3, 2048))
-labels = seq
+model.to(device)
+seq = torch.randint(0, 20000, (3, 2048), device=device)
+labels = seq.clone()
 
 outputs = model(input_ids=seq, labels=labels)
 loss = outputs["loss"]
@@ -36,9 +40,10 @@ MODEL_LOAD_PATH = "_test/recurrent-gbert-large"
 
 loaded_config = BlockRecurrentTransformerConfig.from_pretrained(MODEL_LOAD_PATH)
 loaded_model = BlockRecurrentTransformerForMaskedLM.from_pretrained(MODEL_LOAD_PATH, config=loaded_config)
+loaded_model.to(device)
+seq = torch.randint(0, 20000, (3, 2048), device=device)
+labels = seq.clone()
 
-seq = torch.randint(0, 20000, (3, 2048))
-labels = seq
 
 outputs = loaded_model(input_ids=seq, labels=labels)
 loss = outputs["loss"]

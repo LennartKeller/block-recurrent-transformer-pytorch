@@ -608,7 +608,7 @@ class BlockRecurrentTransformerEncoder(nn.Module):
         recurrent_layers = default(recurrent_layers, (depth // 2,)) # default to one recurent layer at middle of the network
         self.recurrent_layers = set(recurrent_layers)
 
-        assert all([0 < layer <= depth for layer in recurrent_layers])
+        assert all([0 < layer <= depth for layer in recurrent_layers]), ([layer for layer in recurrent_layers], depth)
 
         self.token_emb = nn.Embedding(num_tokens, dim)
 

@@ -146,9 +146,9 @@ if __name__ == "__main__":
    config = convert_config(
        bert_model.config,
        BERT_CONFIG_TRANSLATE_MAP,
-       recurrent_layers=(12, 18, 23),
-       xl_memory_layers=(6, 14, 20),
-       max_seq_len=1024,
+       recurrent_layers=(20,),
+       xl_memories_layers=tuple(range(1, bert_model.config.num_hidden_layers)),
+       max_seq_len=512,
        block_width=512,
        enhanced_recurrence=True,
        use_flash_attn=True,
@@ -167,8 +167,8 @@ if __name__ == "__main__":
 
    print("Saving MemoryTransformer")
    model.save_pretrained("_test/recurrent-gbert-large")
-   bert_tokenizer.model_max_length = 1024
-   bert_tokenizer.init_kwargs["model_max_length"] = 1024
+   bert_tokenizer.model_max_length = config.max_seq_len
+   bert_tokenizer.init_kwargs["model_max_length"] = config.max_seq_len
    bert_tokenizer.save_pretrained("_test/recurrent-gbert-large")
 
    print("Saving model with random initialized weights")
@@ -186,9 +186,9 @@ if __name__ == "__main__":
    config = convert_config(
        bert_model.config,
        BERT_CONFIG_TRANSLATE_MAP,
-       recurrent_layers=(4,),
-       xl_memories_layers=(5, 6),
-       max_seq_len=1024,
+       recurrent_layers=(10,),
+       xl_memories_layers=tuple(range(1, bert_model.config.num_hidden_layers))[::3],
+       max_seq_len=512,
        block_width=512,
        enhanced_recurrence=True,
        use_flash_attn=True,
@@ -207,8 +207,8 @@ if __name__ == "__main__":
    
    print("Saving MemoryTransformer")
    model.save_pretrained("_test/recurrent-bert-base-german-cased")
-   bert_tokenizer.model_max_length = 1024
-   bert_tokenizer.init_kwargs["model_max_length"] = 1024
+   bert_tokenizer.model_max_length = config.max_seq_len
+   bert_tokenizer.init_kwargs["model_max_length"] = config.max_seq_len
    bert_tokenizer.save_pretrained("_test/recurrent-bert-base-german-cased")
    
    print("Saving model with random initialized weights")

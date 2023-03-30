@@ -7,6 +7,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 from transformers import PreTrainedModel, PretrainedConfig, BatchEncoding
+from transformers.data import DataCollatorWithPadding
 from transformers.modeling_outputs import BaseModelOutput, MaskedLMOutput, ModelOutput
 from block_recurrent_transformer_pytorch.block_recurrent_transformer_encoder_pytorch import BlockRecurrentTransformerEncoder
 
@@ -32,6 +33,7 @@ class BlockRecurrentTransformerConfig(PretrainedConfig):
             enhanced_recurrence = False,
             ignore_index = -100,
             use_flash_attn = False,
+            pad_segments = False,
             **kwargs
     ):
         super().__init__(**kwargs)
@@ -52,6 +54,7 @@ class BlockRecurrentTransformerConfig(PretrainedConfig):
         self.enhanced_recurrence = enhanced_recurrence
         self.ignore_index = ignore_index
         self.use_flash_attn = use_flash_attn
+        self.pad_segments = pad_segments # torch.compile requires fixed size batches...
 
 
 class BlockRecurrentTransformerModel(PreTrainedModel):
@@ -69,6 +72,16 @@ class BlockRecurrentTransformerModel(PreTrainedModel):
             for arg, val in config.items()
             if arg in signature(BlockRecurrentTransformerEncoder.__init__).parameters
         })
+        
+        # This is somewhat ugly...
+        if self.config.pad_segments:
+            tokenizer = kwargs.pop("tokenizer")
+            self.collator = DataCollatorWithPadding(
+                padding="max_length",
+                max_length=self.config.max_seq_len,
+                tokenizer=tokenizer
+            )
+            
 
     def forward(self, *args, **kwargs) -> Union[Dict[str, torch.Tensor], Tuple[torch.Tensor]]:
         outputs = self._forward(*args, **kwargs)
@@ -162,10 +175,15 @@ class BlockRecurrentTransformerModel(PreTrainedModel):
         for key, tensor in inputs.items():
             segmented_tensors = tensor.chunk(n_segments, dim=-1) 
             for idx, (segment, segmented_tensor) in enumerate(zip(segments, segmented_tensors)):
+                segmented_tensor = segmented_tensor.contiguous()
                 if idx == 0 and (seg_len := segmented_tensor.size(-1)) > self.config.max_seq_len:
                     logger.warning(f"Encountered segment with invalid length ({seg_len})")
                 segment[key] = segmented_tensor
-        return [BatchEncoding(segment) for segment in segments]
+        segments = [BatchEncoding(segment) for segment in segments]
+        if self.config.pad_segments:
+            segments = self.collator(segments)
+        return segments
+
 
     @staticmethod
     def _gather_results_from_dicts(segment_outputs: List[ModelOutput]) -> Dict[str, torch.Tensor]:
