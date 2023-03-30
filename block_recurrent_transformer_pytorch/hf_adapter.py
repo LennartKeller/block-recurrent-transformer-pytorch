@@ -255,7 +255,12 @@ class BlockRecurrentTransformerForMaskedLM(BlockRecurrentTransformerModel):
             # Due to chunking, we sometimes encounter segments without any masked-out tokens.
             # In these cases the loss is NaN, and we replace it with a artificial zero loss
             if torch.isnan(loss):
-                loss = torch.tensor(0.0, requires_grad=True, device=loss.device)
+                loss = torch.tensor(
+                    0.0,
+                    requires_grad=True,
+                    dtype=logits.dtype,
+                    device=loss.device
+                )
         
         if return_dict:
             outputs = MaskedLMOutput(logits=logits)
