@@ -759,7 +759,7 @@ class BlockRecurrentTransformerEncoder(nn.Module):
         # Hack to get multi-gpu setup to work
         if device is None:
             device = self.device
-        attn_mask = torch.ones((width, 2* width), device=device, dtype=torch.bool)
+        attn_mask = torch.ones((width, 2* width), device=device, dtype=torch.long).bool()
         return attn_mask
 
     def forward(

@@ -139,7 +139,8 @@ class BlockRecurrentTransformerModel(PreTrainedModel):
         for segment in segments:
             segment["states"] = last_state
             segment["xl_memories"] = last_xl_memories
-            segment_output, last_state, last_xl_memories = self.forward_segment(return_dict=return_dict, **segment)
+            segment["return_dict"] = return_dict
+            segment_output, last_state, last_xl_memories = self.forward_segment(**segment)
             segment_outputs.append(segment_output)
 
         if return_dict:
