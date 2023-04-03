@@ -34,6 +34,7 @@ print(loss.item())
 print(model.state_dict().keys())
 model.save_pretrained("_test/model")
 
+del model, loss, seq, labels, outputs
 print("#############################")
 
 MODEL_LOAD_PATH = "_test/recurrent-gbert-large"
