@@ -94,7 +94,12 @@ class BlockRecurrentTransformerModel(PreTrainedModel):
         ) -> Union[Dict[str, torch.Tensor], Tuple[torch.Tensor]]:
         if states is None: states = []
         if xl_memories is None: xl_memories = []
-        encoder_outputs = self.encoder(x=input_ids, states=states, xl_memories=xl_memories)
+        encoder_outputs = self.encoder(
+            x=input_ids,
+            states=states,
+            xl_memories=xl_memories,
+            return_memories_and_states=True
+        )
         
         last_states, last_xl_memories = None, None
         if isinstance(encoder_outputs, tuple):
