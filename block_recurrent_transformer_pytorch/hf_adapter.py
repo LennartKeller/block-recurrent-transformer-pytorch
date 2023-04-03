@@ -94,7 +94,7 @@ class BlockRecurrentTransformerModel(PreTrainedModel):
         ) -> Union[Dict[str, torch.Tensor], Tuple[torch.Tensor]]:
         if states is None: states = []
         if xl_memories is None: xl_memories = []
-        embeddings, last_states, last_xl_memories = self.encoder(
+        embeddings, last_xl_memories, last_states = self.encoder(
             x=input_ids,
             states=states,
             xl_memories=xl_memories,
