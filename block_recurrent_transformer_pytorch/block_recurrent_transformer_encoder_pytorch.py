@@ -529,11 +529,15 @@ class AttentionBlock(nn.Module):
         xl_memories: Optional[torch.Tensor] = None,
         states: Optional[torch.Tensor] = None
     ):
-        batch, seq_len, _, width, device = *x.shape, self.block_width, self.device
+        
+        # batch, seq_len, _, width, device = *x.shape, self.block_width, self.device
+        batch, seq_len, _, width = *x.shape, self.block_width
+        device = x.device
 
         # first make sure to pad the sequence length to multiple of the block widths
         # for local attention
 
+        # TODO: Ensure that padding value is right regardless of underlying tokenizer...
         if not divisible_by(seq_len, width):
             padding_to_width_multiple = math.ceil(seq_len / width) * width - seq_len
             x = pad_at_dim(x, (0, padding_to_width_multiple), dim = -2, value = 0)
