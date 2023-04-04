@@ -142,35 +142,49 @@ class BlockRecurrentTransformerModel(PreTrainedModel):
     def get_input_embeddings(self) -> nn.Module:
         return self.encoder.token_emb
     
-    def _split_batch_into_segments(self, inputs: BatchEncoding) -> List[BatchEncoding]:
-        """
-        Training a block recurrent transformer requires a special batching of texts,
-        because it is crucial to process longer texts segment-wise 
-        in order to train or - during inference - leverage the memory.
+    # def _split_batch_into_segments(self, inputs: BatchEncoding) -> List[BatchEncoding]:
+    #     """
+    #     Training a block recurrent transformer requires a special batching of texts,
+    #     because it is crucial to process longer texts segment-wise 
+    #     in order to train or - during inference - leverage the memory.
 
-        This function expects batches to be padded to max_length.
+    #     This function expects batches to be padded to max_length.
 
-        It takes a batch of texts in (padded) original length and 
-        splits them into round(batch_text_length // max_seq_length) segments.
-        """
+    #     It takes a batch of texts in (padded) original length and 
+    #     splits them into round(batch_text_length // max_seq_length) segments.
+    #     """
 
-        text_length = inputs["input_ids"].size(1)
-        # Round UP to next common denominator, to avoid overflowing segments...
-        text_length_rounded = self.config.max_seq_len * ceil(text_length / self.config.max_seq_len)
-        n_segments = max(round(text_length_rounded // self.config.max_seq_len), 1)
+    #     text_length = inputs["input_ids"].size(1)
+    #     # Round UP to next common denominator, to avoid overflowing segments...
+    #     text_length_rounded = self.config.max_seq_len * ceil(text_length / self.config.max_seq_len)
+    #     n_segments = max(round(text_length_rounded // self.config.max_seq_len), 1)
         
-        segments = [{} for _ in range(n_segments)]
+    #     segments = [{} for _ in range(n_segments)]
+    #     for key, tensor in inputs.items():
+    #         segmented_tensors = tensor.chunk(n_segments, dim=-1) 
+    #         for idx, (segment, segmented_tensor) in enumerate(zip(segments, segmented_tensors)):
+    #             segmented_tensor = segmented_tensor.contiguous()
+    #             if idx == 0 and (seg_len := segmented_tensor.size(-1)) > self.config.max_seq_len:
+    #                 logger.warning(f"Encountered segment with invalid length ({seg_len})")
+    #             segment[key] = segmented_tensor
+    #     segments = [BatchEncoding(segment) for segment in segments]
+    #     if self.config.pad_segments:
+    #         segments = self.collator(segments)
+    #     return segments
+     
+    def _split_batch_into_segments(self, inputs: BatchEncoding) -> List[BatchEncoding]:
+        max_seq_len = self.config.max_seq_len
+        chunked_data = defaultdict(list)
         for key, tensor in inputs.items():
-            segmented_tensors = tensor.chunk(n_segments, dim=-1) 
-            for idx, (segment, segmented_tensor) in enumerate(zip(segments, segmented_tensors)):
-                segmented_tensor = segmented_tensor.contiguous()
-                if idx == 0 and (seg_len := segmented_tensor.size(-1)) > self.config.max_seq_len:
-                    logger.warning(f"Encountered segment with invalid length ({seg_len})")
-                segment[key] = segmented_tensor
-        segments = [BatchEncoding(segment) for segment in segments]
-        if self.config.pad_segments:
-            segments = self.collator(segments)
+            splitted_tensor = tensor.split(max_seq_len, dim=1)
+            chunked_data[key].extend(splitted_tensor)
+        segments = [
+            {key: chunks[i] for key, chunks in chunked_data.items()}
+            for i in range(len(chunked_data["input_ids"]))
+        ]
         return segments
+        
+
 
 
     @staticmethod

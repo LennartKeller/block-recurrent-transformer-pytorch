@@ -515,6 +515,10 @@ class AttentionBlock(nn.Module):
             else:
                 raise ValueError(f"Invalid value for argument gate_type ({gate_type})")
 
+    @property
+    def device(self):
+        return next(self.parameters()).device
+
     def forward(
         self,
         x,
@@ -525,7 +529,7 @@ class AttentionBlock(nn.Module):
         xl_memories: Optional[torch.Tensor] = None,
         states: Optional[torch.Tensor] = None
     ):
-        batch, seq_len, _, width = *x.shape, self.block_width
+        batch, seq_len, _, width, device = *x.shape, self.block_width, self.device
 
         # first make sure to pad the sequence length to multiple of the block widths
         # for local attention
@@ -548,6 +552,8 @@ class AttentionBlock(nn.Module):
         # bucket the queries, keys, values by block width
 
         bq, bk, bv = map(lambda t: rearrange(t, 'b ... (w n) d -> b w ... n d', n = width), (q, k, v))
+
+        orig_bk, orig_bv = bk, bv
 
         # save the last key / values as memories for recurrence
 
@@ -601,67 +607,92 @@ class AttentionBlock(nn.Module):
         # it was hard moving this to a separate module, as the attention is closely intertwined between the current tokens and state tokens
 
         if self.is_recurrent_layer:
+            # process input in blocks
+
+            x_blocks = x[:, :seq_len].split(width, dim = -2)
+
+            # ready attended output of the input to the state, concatted block by block
+
+            to_state_out = torch.empty((batch, 0, out.shape[-1]), device = device, dtype = out.dtype)
+
+            # use initial state if no states were passed in
+
             if not exists(states):
                 states = self.init_state
 
-            orig_states = states
+            for ind, (x_block, xk_block, xv_block) in enumerate(zip(x_blocks, orig_bk.unbind(dim = 1), orig_bv.unbind(dim = 1))):
+                is_last = ind == (len(x_blocks) - 1)
 
-            # pre norm state for attention
+                block_seq_len = x_block.shape[-2]
+                xk_block, xv_block = xk_block[..., :block_seq_len, :], xv_block[..., :block_seq_len, :]
 
-            states = self.state_norm(states)
+                residual_states = states
 
-            # add the positional ids, as stated in the paper critical for it to work
+                # pre norm state for attention
 
-            states = states + self.state_pos_ids
+                states = self.state_norm(states)
 
-            # get queries for cross attention, which they do not share, although they share key / values. another intriguing detail
+                # add the positional ids, as stated in the paper critical for it to work
 
-            q_to_state = self.q_to_state(x[:, :seq_len])
-            q_from_state = self.q_from_state(states)
+                states = states + self.state_pos_ids
 
-            q_to_state, q_from_state = map(lambda t: rearrange(t, '... n (h d) -> ... h n d', h = self.heads), (q_to_state, q_from_state))
+                # get queries for cross attention, which they do not share, although they share key / values. another intriguing detail
 
-            # self attention qkv for states
+                q_to_state = self.q_to_state(x_block)
+                q_from_state = self.q_from_state(states)
 
-            state_q, state_k, state_v = (self.state_to_q(states), *self.state_to_kv(states).chunk(2, dim = -1))
+                q_to_state, q_from_state = map(lambda t: rearrange(t, '... n (h d) -> ... h n d', h = self.heads), (q_to_state, q_from_state))
 
-            state_q_einsum = 'n (h d)' if state_q.ndim == 2 else 'b n (h d)'
-            state_q = repeat(state_q, f'{state_q_einsum} -> b h n d', h = self.heads, b = batch)
+                # self attention qkv for states
 
-            # cross attend to the past states key values
+                state_q, state_k, state_v = (self.state_to_q(states), *self.state_to_kv(states).chunk(2, dim = -1))
 
-            to_state_out = self.to_state_cross_attn(q_to_state, state_k, state_v)
+                state_q_einsum = 'n (h d)' if state_q.ndim == 2 else 'b n (h d)'
+                state_q = repeat(state_q, f'{state_q_einsum} -> b h n d', h = self.heads, b = batch)
 
-            to_state_out = rearrange(to_state_out, 'b h n d -> b n (h d)')
+                # cross attend to the past states key values
+
+                to_state_out_block = self.to_state_cross_attn(q_to_state, state_k, state_v)
+
+                to_state_out_block = rearrange(to_state_out_block, 'b h n d -> b n (h d)')
+
+                to_state_out = torch.cat((to_state_out, to_state_out_block), dim = -2)
+
+                # if need to return states, or is not the last block, calculate state update
+
+                if return_memories_and_states or not is_last:
+
+                    # states must also undergo self attention
+
+                    if q_from_state.ndim == 3:
+                        q_from_state = repeat(q_from_state, '... -> b ...', b = batch)
+
+                    state_out = self.state_self_attn(state_q, state_k, state_v)
+
+                    from_state_out = self.from_state_cross_attn(q_from_state, xk_block, xv_block)
+
+                    state_out = torch.cat((state_out, from_state_out), dim = -1)
+                    state_out = rearrange(state_out, 'b h n d -> b n (h d)')
+
+                    state_out = self.to_state_out(state_out)
+
+                    # use the best performing configuration
+                    # fixed simple gate - nothing more than a learned EMA with some resemblance to highway networks
+                    states = self.state_gate(residual_states, state_out)
+
+                    # z = self.state_out_to_gate(state_out)
+                    # learned_ema_decay = self.learned_ema_beta.sigmoid()
+
+                    # # set new state with the learned EMA gating
+
+                    # states = learned_ema_decay * z + (1 - learned_ema_decay) * residual_states
 
             # concat the output of cross attending to the state vectors
 
             out = torch.cat((out, to_state_out), dim = -1)
 
             if return_memories_and_states:
-                # states must also undergo self attention
-
-                if q_from_state.ndim == 3:
-                    q_from_state = repeat(q_from_state, '... -> b ...', b = batch)
-
-                state_out = self.state_self_attn(state_q, state_k, state_v)
-
-                from_state_out = self.from_state_cross_attn(q_from_state, memories[0], memories[1])
-
-                state_out = torch.cat((state_out, from_state_out), dim = -1)
-                state_out = rearrange(state_out, 'b h n d -> b n (h d)')
-
-                state_out = self.to_state_out(state_out)
-
-                # use the best performing configuration
-                # fixed simple gate - nothing more than a learned EMA with some resemblance to highway networks
-
-                # z = self.state_out_to_gate(state_out)
-                # learned_ema_decay = self.learned_ema_bias.sigmoid()
-
-                # new_states = learned_ema_decay * z + (1 - learned_ema_decay) * orig_states
-
-                new_states = self.state_gate(orig_states=orig_states, state_out=state_out)
+                new_states = states
 
         return self.to_out(out), memories, new_states
 
