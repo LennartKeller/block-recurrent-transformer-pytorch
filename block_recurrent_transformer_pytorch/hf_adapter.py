@@ -179,7 +179,7 @@ class BlockRecurrentTransformerModel(PreTrainedModel):
             splitted_tensor = tensor.split(max_seq_len, dim=1)
             chunked_data[key].extend(splitted_tensor)
         segments = [
-            {key: chunks[i] for key, chunks in chunked_data.items()}
+            BatchEncoding({key: chunks[i] for key, chunks in chunked_data.items()})
             for i in range(len(chunked_data["input_ids"]))
         ]
         return segments
