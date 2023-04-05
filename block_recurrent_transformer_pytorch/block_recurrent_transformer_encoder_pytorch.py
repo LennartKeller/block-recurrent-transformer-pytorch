@@ -407,7 +407,8 @@ class Lambda(nn.Module):
 class LSTMStyleGate(nn.Module):
     """
     LSTM-style gate as proposed in the original paper.
-    Judging from the results, this should perform slightly worse...
+    Judging from brief experiments (i.e. train 1.5k steps w. bs 2),
+    this gate performs considerably worse.
     """
 
     def __init__(self, dim: int) -> None:

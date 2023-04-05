@@ -235,7 +235,7 @@ if __name__ == "__main__":
    
    print("Saving MemoryTransformer with random weights fixed gate")
    random_model = BlockRecurrentTransformerModel(config)
-   random_model.save_pretrained("_test/rand-recurrent-gbert-large")
+   random_model.save_pretrained("_test/rand-recurrent-bert-base-german-cased")
    bert_tokenizer.save_pretrained("_test/rand-recurrent-bert-base-german-cased")
 
    print("Saving MemoryTransformer with random weights lstm-style gate")
