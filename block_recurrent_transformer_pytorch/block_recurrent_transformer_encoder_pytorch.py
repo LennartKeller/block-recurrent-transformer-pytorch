@@ -508,8 +508,14 @@ class AttentionBlock(nn.Module):
 
         # gating related parameters - using the fixed simple config
 
-        self.state_out_to_gate = nn.Linear(dim, dim)
-        self.learned_ema_beta = nn.Parameter(torch.randn(dim))
+        # self.state_out_to_gate = nn.Linear(dim, dim)
+        # self.learned_ema_beta = nn.Parameter(torch.randn(dim))
+        if gate_type is None or gate_type.lower() == "fixed":
+            self.state_gate = FixedStateGate(dim)
+        elif gate_type.lower() == "lstm":
+            self.state_gate = LSTMStyleGate(dim)
+        else:
+            raise ValueError(f"Invalid value {gate_type} for param 'gate_type'. Chose either 'fixed' or 'lstm'.")
 
     @property
     def device(self):
@@ -671,15 +677,17 @@ class AttentionBlock(nn.Module):
 
                 state_out = self.to_state_out(state_out)
 
+                states = self.state_gate(residual_states, state_out)
+
                 # use the best performing configuration
                 # fixed simple gate - nothing more than a learned EMA with some resemblance to highway networks
 
-                z = self.state_out_to_gate(state_out)
-                learned_ema_decay = self.learned_ema_beta.sigmoid()
+                # z = self.state_out_to_gate(state_out)
+                # learned_ema_decay = self.learned_ema_beta.sigmoid()
 
-                # set new state with the learned EMA gating
+                # # set new state with the learned EMA gating
 
-                states = learned_ema_decay * z + (1 - learned_ema_decay) * residual_states
+                # states = learned_ema_decay * z + (1 - learned_ema_decay) * residual_states                
 
         # concat the output of cross attending to the state vectors
 
