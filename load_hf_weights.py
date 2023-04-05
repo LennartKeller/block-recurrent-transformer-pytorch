@@ -189,6 +189,7 @@ if __name__ == "__main__":
    lstm_gate_config.update({"gate_type": "lstm"})
    lstm_gate_model = BlockRecurrentTransformerModel(lstm_gate_config)
    lstm_gate_model.save_pretrained("_test/rand-recurrent-gbert-large-lstm-gate")
+   bert_tokenizer.save_pretrained("_test/rand-recurrent-gbert-large-lstm-gate")
 
    #############################################################
    
@@ -242,3 +243,4 @@ if __name__ == "__main__":
    lstm_gate_config.update({"gate_type": "lstm"})
    lstm_gate_model = BlockRecurrentTransformerModel(lstm_gate_config)
    lstm_gate_model.save_pretrained("_test/rand-recurrent-bert-base-german-cased-lstm-gate")
+   bert_tokenizer.save_pretrained("_test/rand-recurrent-bert-base-german-cased-lstm-gate")
