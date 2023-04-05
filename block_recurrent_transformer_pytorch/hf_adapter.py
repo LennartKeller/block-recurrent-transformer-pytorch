@@ -105,7 +105,7 @@ class BlockRecurrentTransformerModel(PreTrainedModel):
             outputs = dict(last_hidden_state=embeddings)
         else:
             outputs = (embeddings,)
-        return outputs, last_states, last_xl_memories
+        return outputs, last_xl_memories, last_states
     
     def _forward(self, input_ids: torch.Tensor, labels: torch.Tensor = None, return_dict: bool = True, *args, **kwargs) -> Union[Dict[str, torch.Tensor], Tuple[torch.Tensor]]:
         
@@ -122,14 +122,14 @@ class BlockRecurrentTransformerModel(PreTrainedModel):
         elif not self.training and self.config.max_eval_segments is not None:
             segments = segments[:self.config.max_eval_segments]
         
-        last_state = None
+        last_states = None
         last_xl_memories = None
         segment_outputs = []
         for segment in segments:
-            segment["states"] = last_state
+            segment["states"] = last_states
             segment["xl_memories"] = last_xl_memories
             segment["return_dict"] = return_dict
-            segment_output, last_state, last_xl_memories = self.forward_segment(**segment)
+            segment_output, last_xl_memories, last_states = self.forward_segment(**segment)
             segment_outputs.append(segment_output)
 
         if return_dict:
