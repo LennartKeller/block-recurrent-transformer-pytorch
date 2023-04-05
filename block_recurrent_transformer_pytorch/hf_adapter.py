@@ -246,7 +246,7 @@ class BlockRecurrentTransformerForMaskedLM(BlockRecurrentTransformerModel):
             *args,
             **kwargs
         ) -> Union[Dict[str, torch.Tensor], Tuple[torch.Tensor]]:
-        outputs, last_states, last_xl_memories = super().forward_segment(
+        outputs, last_xl_memories, last_states = super().forward_segment(
             input_ids=input_ids,
             states=states,
             xl_memories=xl_memories,
@@ -282,5 +282,5 @@ class BlockRecurrentTransformerForMaskedLM(BlockRecurrentTransformerModel):
             if labels is not None:
                 outputs = (loss,) + outputs
         
-        return outputs, last_states, last_xl_memories
+        return outputs, last_xl_memories, last_states
         
