@@ -235,10 +235,10 @@ if __name__ == "__main__":
    print("Saving MemoryTransformer with random weights fixed gate")
    random_model = BlockRecurrentTransformerModel(config)
    random_model.save_pretrained("_test/rand-recurrent-gbert-large")
-   bert_tokenizer.save_pretrained("_test/rand-recurrent-bert-base-cased")
+   bert_tokenizer.save_pretrained("_test/rand-recurrent-bert-base-german-cased")
 
    print("Saving MemoryTransformer with random weights lstm-style gate")
    lstm_gate_config = deepcopy(config)
    lstm_gate_config.update({"gate_type": "lstm"})
    lstm_gate_model = BlockRecurrentTransformerModel(lstm_gate_config)
-   lstm_gate_model.save_pretrained("_test/rand-recurrent-bert-base-cased-lstm-gate")
+   lstm_gate_model.save_pretrained("_test/rand-recurrent-bert-base-german-cased-lstm-gate")
