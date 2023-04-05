@@ -176,8 +176,8 @@ class BlockRecurrentTransformerModel(PreTrainedModel):
         max_seq_len = self.config.max_seq_len
         chunked_data = defaultdict(list)
         for key, tensor in inputs.items():
-            splitted_tensor = tensor.split(max_seq_len, dim=1)
-            chunked_data[key].extend(splitted_tensor)
+            splitted_tensors = tensor.split(max_seq_len, dim=1)
+            chunked_data[key].extend(splitted_tensors)
         segments = [
             BatchEncoding({key: chunks[i] for key, chunks in chunked_data.items()})
             for i in range(len(chunked_data["input_ids"]))
@@ -197,7 +197,7 @@ class BlockRecurrentTransformerModel(PreTrainedModel):
         
         concatenated_outputs = dict(
             (key, torch.cat(tensors, dim=1)) if key != "loss" else (key, sum(tensors) / len(tensors))
-            # This version only keeps the last loss to pass it to trainer because the others were already backpropated.
+            # This version only keeps the last loss to pass it to trainer because the others were already backpropagated.
             # (key, torch.cat(tensors, dim=1)) if key != "loss" else (key, tensors[-1] / len(all_outputs))
             for key, tensors in all_outputs.items()
         )
