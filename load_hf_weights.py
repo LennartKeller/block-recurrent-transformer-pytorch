@@ -179,10 +179,16 @@ if __name__ == "__main__":
    lstm_gate_model = load_state_dict_merciful(lstm_gate_model, converted_state_dict)
    lstm_gate_model.save_pretrained("_test/recurrent-gbert-large-lstm-gate")
 
-   print("Saving model with random initialized weights with fixed gate")
+   print("Saving MemoryTransformer with random weights fixed gate")
    random_model = BlockRecurrentTransformerModel(config)
    random_model.save_pretrained("_test/rand-recurrent-gbert-large")
    bert_tokenizer.save_pretrained("_test/rand-recurrent-gbert-large")
+
+   print("Saving MemoryTransformer with random weights lstm-style gate")
+   lstm_gate_config = deepcopy(config)
+   lstm_gate_config.update({"gate_type": "lstm"})
+   lstm_gate_model = BlockRecurrentTransformerModel(lstm_gate_config)
+   lstm_gate_model.save_pretrained("_test/rand-recurrent-gbert-large-lstm-gate")
 
    #############################################################
    
@@ -226,10 +232,13 @@ if __name__ == "__main__":
    lstm_gate_model = load_state_dict_merciful(lstm_gate_model, converted_state_dict)
    lstm_gate_model.save_pretrained("_test/recurrent-bert-base-german-cased-lstm-gate")
    
-   print("Saving model with random initialized weights with fixed gate")
+   print("Saving MemoryTransformer with random weights fixed gate")
    random_model = BlockRecurrentTransformerModel(config)
-   random_model.save_pretrained("_test/rand-recurrent-bert-base-german-cased")
-   bert_tokenizer.save_pretrained("_test/rand-recurrent-bert-base-german-cased")
+   random_model.save_pretrained("_test/rand-recurrent-gbert-large")
+   bert_tokenizer.save_pretrained("_test/rand-recurrent-gbert-large")
 
-
-
+   print("Saving MemoryTransformer with random weights lstm-style gate")
+   lstm_gate_config = deepcopy(config)
+   lstm_gate_config.update({"gate_type": "lstm"})
+   lstm_gate_model = BlockRecurrentTransformerModel(lstm_gate_config)
+   lstm_gate_model.save_pretrained("_test/rand-recurrent-gbert-large-lstm-gate")
