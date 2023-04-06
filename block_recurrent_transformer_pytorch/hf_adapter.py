@@ -37,7 +37,7 @@ class BlockRecurrentTransformerConfig(PretrainedConfig):
             pad_segments = False,
             gate_type = "fixed",
             position_encoding_type = "rel_bias",
-            ff_dropout = 0.1
+            ff_dropout = 0.1,
             **kwargs
     ):
         super().__init__(**kwargs)
