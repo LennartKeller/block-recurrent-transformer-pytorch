@@ -406,7 +406,7 @@ class GEGLU(nn.Module):
 def FeedForward(in_dim, out_dim, dropout_p=0.1):
     return nn.Sequential(
         LayerNorm(in_dim),
-        # nn.Dropout(dropout_p),
+        nn.Dropout(dropout_p),
         nn.Linear(in_dim, out_dim * 2, bias = False),
         GEGLU(),
         nn.Linear(out_dim, in_dim, bias = False)
