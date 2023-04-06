@@ -709,7 +709,6 @@ class AttentionBlock(nn.Module):
 
         if not self.is_recurrent_layer:
             out = self.to_out(out)
-            out = self.dropout(out)
             return out, memories, new_states
 
         # if designated a recurrent layer, do all the state logic
@@ -801,7 +800,6 @@ class AttentionBlock(nn.Module):
             new_states = states
         
         out = self.to_out(out)
-        out = self.dropout(out)
         
         return out, memories, new_states
 
