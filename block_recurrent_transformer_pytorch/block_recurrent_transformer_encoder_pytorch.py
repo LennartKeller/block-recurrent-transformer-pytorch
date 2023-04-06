@@ -624,7 +624,7 @@ class AttentionBlock(nn.Module):
         xl_memories: Optional[torch.Tensor] = None,
         states: Optional[torch.Tensor] = None
     ):
-        batch, seq_len, _, width, device = *x.shape, self.block_width, self.device
+        batch, seq_len, _, width, device = *x.shape, self.block_width, x.device
 
         # first make sure to pad the sequence length to multiple of the block widths
         # for local attention
