@@ -3,13 +3,14 @@ import logging
 from inspect import signature
 from math import ceil
 from typing import Dict, List, Tuple, Union, Optional
+import warnings
 import torch
 import torch.nn.functional as F
 from torch import nn
 from transformers import PreTrainedModel, PretrainedConfig, BatchEncoding
 from transformers.data import DataCollatorWithPadding
 from transformers.modeling_outputs import BaseModelOutput, MaskedLMOutput, ModelOutput
-from block_recurrent_transformer_pytorch.block_recurrent_transformer_encoder_pytorch import BlockRecurrentTransformerEncoder
+from block_recurrent_transformer_pytorch.block_recurrent_transformer_encoder_pytorch import BlockRecurrentTransformerEncoder, LayerNorm
 
 logger = logging.getLogger(__name__)
 
@@ -236,7 +237,9 @@ class BlockRecurrentTransformerForMaskedLM(BlockRecurrentTransformerModel):
 
     def __init__(self, config: PretrainedConfig, *inputs, **kwargs):
         super().__init__(config, *inputs, **kwargs)
-        self.classifier = nn.Linear(self.config.dim, self.config.num_tokens)
+        self.to_classify = nn.Linear(self.config.dim, self.config.dim)
+        self.norm = LayerNorm(self.config.dim)
+        self.classifier = nn.Linear(self.config.dim, self.config.num_tokens, bias=False)
 
     def forward_segment(
             self,
@@ -260,6 +263,8 @@ class BlockRecurrentTransformerForMaskedLM(BlockRecurrentTransformerModel):
             embeddings = outputs["last_hidden_state"]
         else:
             embeddings = outputs[0]
+        embeddings = self.to_classify(embeddings)
+        embeddings = self.norm(embeddings)
         logits = self.classifier(embeddings)
         
         if labels is not None:
@@ -268,6 +273,7 @@ class BlockRecurrentTransformerForMaskedLM(BlockRecurrentTransformerModel):
             # Due to chunking, we sometimes encounter segments without any masked-out tokens.
             # In these cases the loss is NaN, and we replace it with a artificial zero loss
             if torch.isnan(loss):
+                warnings.warn("Encountered NaN loss in LMHead.")
                 loss = torch.tensor(
                     0.0,
                     requires_grad=True,
