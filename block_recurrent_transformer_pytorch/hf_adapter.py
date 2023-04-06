@@ -37,6 +37,7 @@ class BlockRecurrentTransformerConfig(PretrainedConfig):
             pad_segments = False,
             gate_type = "fixed",
             position_encoding_type = "rel_bias",
+            ff_dropout = 0.1
             **kwargs
     ):
         super().__init__(**kwargs)
@@ -60,6 +61,7 @@ class BlockRecurrentTransformerConfig(PretrainedConfig):
         self.pad_segments = pad_segments # torch.compile requires fixed size batches...
         self.gate_type = gate_type
         self.position_encoding_type = position_encoding_type
+        self.ff_dropout = ff_dropout
 
 
 class BlockRecurrentTransformerModel(PreTrainedModel):
@@ -237,8 +239,14 @@ class BlockRecurrentTransformerForMaskedLM(BlockRecurrentTransformerModel):
 
     def __init__(self, config: PretrainedConfig, *inputs, **kwargs):
         super().__init__(config, *inputs, **kwargs)
-        self.to_classify = nn.Linear(self.config.dim, self.config.dim)
-        self.norm = LayerNorm(self.config.dim)
+        self.to_classify = nn.Sequential(
+            LayerNorm(self.config.dim),
+            nn.Linear(self.config.dim, self.config.dim),
+            nn.GELU(),
+            LayerNorm(self.config.dim),
+            nn.Dropout(self.config.ff_dropout)
+        )
+
         self.classifier = nn.Linear(self.config.dim, self.config.num_tokens, bias=False)
 
     def forward_segment(
