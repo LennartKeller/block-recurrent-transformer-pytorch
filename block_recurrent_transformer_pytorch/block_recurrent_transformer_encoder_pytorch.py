@@ -273,6 +273,7 @@ class Attend(nn.Module):
         super().__init__()
         self.causal = causal
         self.ff_dropout = ff_dropout
+        self.dropout = nn.Dropout(ff_dropout)
         self.register_buffer("mask", None, persistent=False)
 
         self.use_flash_attn = use_flash_attn
@@ -344,7 +345,7 @@ class Attend(nn.Module):
             out = F.scaled_dot_product_attention(
                 q, k, v,
                 attn_mask = attn_mask,
-                dropout_p = self.ff_dropout
+                dropout_p = self.ff_dropout if self.training else 0.0
             )
 
         return out
@@ -389,6 +390,8 @@ class Attend(nn.Module):
         # attention
 
         attn = sim.softmax(dim=-1)
+
+        attn = self.dropout(attn)
 
         # aggregate values
 
