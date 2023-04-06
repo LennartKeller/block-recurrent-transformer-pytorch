@@ -272,7 +272,6 @@ class BlockRecurrentTransformerForMaskedLM(BlockRecurrentTransformerModel):
         else:
             embeddings = outputs[0]
         embeddings = self.to_classify(embeddings)
-        embeddings = self.norm(embeddings)
         logits = self.classifier(embeddings)
         
         if labels is not None:
