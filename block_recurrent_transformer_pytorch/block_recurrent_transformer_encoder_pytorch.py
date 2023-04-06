@@ -267,10 +267,12 @@ class Attend(nn.Module):
     def __init__(
         self,
         causal = False,
-        use_flash_attn = False
+        use_flash_attn = False,
+        ff_dropout = 0.1
     ):
         super().__init__()
         self.causal = causal
+        self.ff_dropout = ff_dropout
         self.register_buffer("mask", None, persistent=False)
 
         self.use_flash_attn = use_flash_attn
@@ -341,7 +343,8 @@ class Attend(nn.Module):
         with torch.backends.cuda.sdp_kernel(enable_flash=True, enable_math=True, enable_mem_efficient=True):
             out = F.scaled_dot_product_attention(
                 q, k, v,
-                attn_mask = attn_mask
+                attn_mask = attn_mask,
+                dropout_p = self.ff_dropout
             )
 
         return out
@@ -400,9 +403,10 @@ class GEGLU(nn.Module):
         x, gate = x.chunk(2, dim = -1)
         return F.gelu(gate) * x
 
-def FeedForward(in_dim, out_dim):
+def FeedForward(in_dim, out_dim, dropout_p=0.1):
     return nn.Sequential(
         LayerNorm(in_dim),
+        # nn.Dropout(dropout_p),
         nn.Linear(in_dim, out_dim * 2, bias = False),
         GEGLU(),
         nn.Linear(out_dim, in_dim, bias = False)
@@ -417,7 +421,8 @@ class Attention(nn.Module):
         causal = False,
         qk_rmsnorm = False,
         qk_rmsnorm_scale = 8,
-        use_flash_attn = False
+        use_flash_attn = False,
+        ff_dropout = 0.1
     ):
         super().__init__()
         self.causal = causal
@@ -425,7 +430,7 @@ class Attention(nn.Module):
         self.qk_rmsnorm = qk_rmsnorm
         self.qk_rmsnorm_scale = qk_rmsnorm_scale
 
-        self.attend = Attend(causal = causal, use_flash_attn = use_flash_attn)
+        self.attend = Attend(causal = causal, use_flash_attn = use_flash_attn, ff_dropout = ff_dropout)
 
         if qk_rmsnorm:
             self.q_scale = nn.Parameter(torch.ones(dim_head))
@@ -559,10 +564,13 @@ class AttentionBlock(nn.Module):
         num_state_vectors = 0,
         use_flash_attn = False,
         gate_type = None,
+        ff_dropout = 0.1
     ):
         super().__init__()
         inner_dim = dim_head * heads
         self.heads = heads
+        
+        self.dropout = nn.Dropout(ff_dropout)
 
         self.norm = LayerNorm(dim)
 
@@ -700,7 +708,9 @@ class AttentionBlock(nn.Module):
         # early return if not a recurrent layer
 
         if not self.is_recurrent_layer:
-            return self.to_out(out), memories, new_states
+            out = self.to_out(out)
+            out = self.dropout(out)
+            return out, memories, new_states
 
         # if designated a recurrent layer, do all the state logic
         # it was hard moving this to a separate module, as the attention is closely intertwined between the current tokens and state tokens
@@ -789,8 +799,11 @@ class AttentionBlock(nn.Module):
 
         if return_memories_and_states:
             new_states = states
-
-        return self.to_out(out), memories, new_states
+        
+        out = self.to_out(out)
+        out = self.dropout(out)
+        
+        return out, memories, new_states
 
 # classes
 
@@ -816,6 +829,7 @@ class BlockRecurrentTransformerEncoder(nn.Module):
         use_flash_attn = False,
         gate_type = None,
         position_encoding_type = None,
+        ff_dropout = 0.1
     ):
         super().__init__()
         num_state_vectors = default(num_state_vectors, block_width)
@@ -865,7 +879,7 @@ class BlockRecurrentTransformerEncoder(nn.Module):
                     use_flash_attn = use_flash_attn,
                     gate_type=gate_type
                 ),
-                FeedForward(in_dim=dim, out_dim=intermediate_dim)
+                FeedForward(in_dim=dim, out_dim=intermediate_dim, dropout_p=ff_dropout)
             ]))
 
         self.to_embs = nn.Sequential(
@@ -904,6 +918,7 @@ class BlockRecurrentTransformerEncoder(nn.Module):
         return_memories_and_states = None  # can force to either return memory + state or not. by default will only return when number of tokens == max_seq_len
     ):
         device = x.device
+        print(x.size())
 
         # get sequence length i and j for dynamic pos bias
 
