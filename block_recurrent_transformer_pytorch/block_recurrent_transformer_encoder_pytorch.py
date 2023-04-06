@@ -918,7 +918,6 @@ class BlockRecurrentTransformerEncoder(nn.Module):
         return_memories_and_states = None  # can force to either return memory + state or not. by default will only return when number of tokens == max_seq_len
     ):
         device = x.device
-        print(x.size())
 
         # get sequence length i and j for dynamic pos bias
 
