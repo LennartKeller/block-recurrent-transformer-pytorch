@@ -853,6 +853,8 @@ class BlockRecurrentTransformerEncoder(nn.Module):
             raise ValueError(f"Invalid value {position_encoding_type} for argument 'position_encoding_type'. Chose either 'rotary' or 'rel_bias'")
         self.position_encoding_type = position_encoding_type.lower() if position_encoding_type is not None else None
 
+        self.dropout = nn.Dropout(ff_dropout)
+
         self.layers = nn.ModuleList([])
 
         for layer in range(1, depth + 1):
@@ -928,6 +930,7 @@ class BlockRecurrentTransformerEncoder(nn.Module):
         # token embedding
 
         x = self.token_emb(x)
+        x = self.dropout(x)
 
         # dynamic pos bias
 
