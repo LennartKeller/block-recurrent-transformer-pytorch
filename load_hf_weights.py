@@ -5,7 +5,7 @@ from typing import Callable, Dict, List, Union
 from torch import nn
 from torch import Tensor
 from block_recurrent_transformer_pytorch import BlockRecurrentTransformerModel, BlockRecurrentTransformerConfig
-from transformers import AutoModel, AutoTokenizer, PretrainedConfig
+from transformers import AutoModel, AutoTokenizer, PretrainedConfig, set_seed
 
 class ConversionMap(UserDict):
     def __init__(self, map):
@@ -137,6 +137,8 @@ BERT_WEIGHT_CONVERSION_MAP = {
 }
 
 if __name__ == "__main__":
+   print("Setting random seed to 42")
+   set_seed(42)
    
    # Bert-large
    bert_model = AutoModel.from_pretrained("deepset/gbert-large") 
@@ -154,6 +156,7 @@ if __name__ == "__main__":
        enhanced_recurrence=True,
        use_flash_attn=True,
        num_state_vectors=512,
+       position_encoding_type="rel_bias"
     )
    model = BlockRecurrentTransformerModel(config)
    print("MemoryTransformer parameters sizes:")
@@ -208,6 +211,7 @@ if __name__ == "__main__":
        enhanced_recurrence=True,
        use_flash_attn=True,
        num_state_vectors=512,
+       position_encoding_type="rel_bias"
     )
    model = BlockRecurrentTransformerModel(config)
    print("MemoryTransformer parameters sizes:")

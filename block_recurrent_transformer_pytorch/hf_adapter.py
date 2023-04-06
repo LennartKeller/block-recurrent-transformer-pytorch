@@ -35,6 +35,7 @@ class BlockRecurrentTransformerConfig(PretrainedConfig):
             use_flash_attn = False,
             pad_segments = False,
             gate_type = "fixed",
+            position_encoding_type = "rel_bias",
             **kwargs
     ):
         super().__init__(**kwargs)
@@ -57,6 +58,7 @@ class BlockRecurrentTransformerConfig(PretrainedConfig):
         self.use_flash_attn = use_flash_attn
         self.pad_segments = pad_segments # torch.compile requires fixed size batches...
         self.gate_type = gate_type
+        self.position_encoding_type = position_encoding_type
 
 
 class BlockRecurrentTransformerModel(PreTrainedModel):

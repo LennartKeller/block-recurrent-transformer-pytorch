@@ -18,7 +18,8 @@ config = BlockRecurrentTransformerConfig(
     num_state_vectors = 512,        # number of state vectors, i believe this was a single block size in the paper, but can be any amount
     recurrent_layers = (4,),        # where to place the recurrent layer(s) for states with fixed simple gating
     enhanced_recurrence = True,     # enhanced recurrence from ernie-doc paper, i have seen it to work well on my local machine
-    use_flash_attn = True           # use flash attention, if on pytorch 2.0
+    use_flash_attn = True,          # use flash attention, if on pytorch 2.0
+    position_ecoding_type = "rel_bias"
 )
 
 model = BlockRecurrentTransformerForMaskedLM(config=config)
@@ -34,19 +35,19 @@ print(loss.item())
 print(model.state_dict().keys())
 model.save_pretrained("_test/model")
 
-del model, loss, seq, labels, outputs
-print("#############################")
+# del model, loss, seq, labels, outputs
+# print("#############################")
 
-MODEL_LOAD_PATH = "_test/recurrent-gbert-large"
+# MODEL_LOAD_PATH = "_test/recurrent-bert-base-german-cased"
 
-loaded_config = BlockRecurrentTransformerConfig.from_pretrained(MODEL_LOAD_PATH)
-loaded_model = BlockRecurrentTransformerForMaskedLM.from_pretrained(MODEL_LOAD_PATH, config=loaded_config)
-loaded_model.to(device)
-seq = torch.randint(0, 20000, (3, 2048), device=device)
-labels = seq.clone()
+# loaded_config = BlockRecurrentTransformerConfig.from_pretrained(MODEL_LOAD_PATH)
+# loaded_model = BlockRecurrentTransformerForMaskedLM.from_pretrained(MODEL_LOAD_PATH, config=loaded_config)
+# loaded_model.to(device)
+# seq = torch.randint(0, 20000, (1, 2048), device=device)
+# labels = seq.clone()
 
 
-outputs = loaded_model(input_ids=seq, labels=labels)
-loss = outputs["loss"]
-loss.backward()
-print(loss.item())
+# outputs = loaded_model(input_ids=seq, labels=labels)
+# loss = outputs["loss"]
+# loss.backward()
+# print(loss.item())
